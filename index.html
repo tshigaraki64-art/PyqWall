@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>PyqWall</title>
+    <style>
+        :root { --bg: #000; --card: #1C1C1E; --blue: #0A84FF; --text: #FFF; --gray: #8E8E93; --green: #32D74B; --red: #FF453A; --label: #3A3A3C; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: env(safe-area-inset-top) 20px 40px; overscroll-behavior-y: contain; }
+        .hidden { display: none !important; }
+        h1 { font-size: 34px; font-weight: 800; letter-spacing: -1px; margin: 0; }
+        .chapter-card { background: var(--card); padding: 20px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #2c2c2e; display: flex; justify-content: space-between; align-items: center; }
+        .mode-tile { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #2c2c2e; aspect-ratio: 1/1; display: flex; flex-direction: column; justify-content: space-between; }
+        .option { background: var(--card); border: 1px solid #3a3a3c; padding: 18px; border-radius: 14px; margin-bottom: 12px; font-size: 16px; transition: 0.2s; }
+        .correct { background: var(--green) !important; color: #000 !important; font-weight: bold; }
+        .wrong { background: var(--red) !important; }
+        .explanation-box { background: #1c1c1e; border-left: 4px solid var(--blue); padding: 16px; border-radius: 12px; margin-top: 20px; font-size: 14px; line-height: 1.5; }
+        .nav-btn { background: var(--blue); color: #fff; padding: 18px; border-radius: 14px; text-align: center; font-weight: 700; margin-top: 20px; }
+        .tag { background: var(--label); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; margin-right: 5px; color: #d1d1d6; }
+    </style>
+</head>
+<body>
+    <div id="screen-home">
+        <header style="padding: 30px 0 20px;"><h1>PyqWall</h1><p style="color:var(--gray)">NEET 2026 • Botany</p></header>
+        <div id="list-botany">
+            <div class="chapter-card" onclick="openChapter('Organisms and Populations')"><div><h3>Organisms & Populations</h3><p style="color:var(--gray); font-size:12px; margin:0;">Unit 10 • Ecology</p></div><span>→</span></div>
+            <div class="chapter-card" onclick="openChapter('Ecosystem')"><div><h3>Ecosystem</h3><p style="color:var(--gray); font-size:12px; margin:0;">Unit 10 • Ecology</p></div><span>→</span></div>
+        </div>
+    </div>
+
+    <div id="screen-modes" class="hidden">
+        <div onclick="showHome()" style="color:var(--blue); margin-bottom:20px; font-weight:600">← Chapters</div>
+        <h1 id="mode-title" style="font-size:28px; margin-bottom:20px;"></h1>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="mode-tile" onclick="launchQuiz('quick')"><div>📅</div><h4>Quick PYQs</h4><p style="color:var(--gray); font-size:11px; margin:0;">2019-2025</p></div>
+            <div class="mode-tile" onclick="launchQuiz('full')"><div>📚</div><h4>Full Bank</h4><p style="color:var(--gray); font-size:11px; margin:0;">2013-2025</p></div>
+            <div class="mode-tile" onclick="launchQuiz('repeated')"><div>🔥</div><h4>Repeated</h4><p style="color:var(--gray); font-size:11px; margin:0;">High Freq</p></div>
+            <div class="mode-tile" onclick="launchQuiz('future')"><div>🧠</div><h4>Challenge</h4><p style="color:var(--gray); font-size:11px; margin:0;">2026 Predict</p></div>
+        </div>
+    </div>
+
+    <div id="screen-quiz" class="hidden">
+        <div onclick="showModes()" style="color:var(--blue); margin-bottom:20px; font-weight:600">← Exit</div>
+        <div id="q-meta" style="margin-bottom:10px;"></div>
+        <div id="q-text" style="font-size:20px; font-weight:600; line-height:1.4; margin-bottom:20px;"></div>
+        <div id="options-container"></div>
+        <div id="explanation" class="explanation-box hidden"></div>
+        <div id="btn-next" class="nav-btn hidden" onclick="handleNext()">Next Question →</div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        let activeChapter = ""; let activeSet = []; let qIdx = 0;
+        function openChapter(n) { activeChapter = n; document.getElementById('mode-title').innerText = n; changeScreen('screen-modes'); }
+        function launchQuiz(m) { 
+            if(!window.db) { alert("data.js not loaded!"); return; }
+            activeSet = window.db[activeChapter][m] || []; 
+            if(activeSet.length === 0) { alert("Questions coming soon!"); return; }
+            qIdx = 0; changeScreen('screen-quiz'); loadQ(); 
+        }
+        function loadQ() {
+            const d = activeSet[qIdx];
+            document.getElementById('q-meta').innerHTML = `<span style="color:var(--blue); font-size:12px; font-weight:700;">${d.year}</span><br>`;
+            d.tags.forEach(t => { document.getElementById('q-meta').innerHTML += `<span class="tag">${t}</span>`; });
+            document.getElementById('q-text').innerText = d.q;
+            const c = document.getElementById('options-container'); c.innerHTML = '';
+            d.options.forEach((o, i) => {
+                const b = document.createElement('div'); b.className = 'option'; b.innerText = o;
+                b.onclick = () => {
+                    const opts = document.querySelectorAll('.option'); opts.forEach(opt => opt.style.pointerEvents = 'none');
+                    if(i === d.ans) b.classList.add('correct'); else { b.classList.add('wrong'); opts[d.ans].classList.add('correct'); }
+                    document.getElementById('explanation').innerHTML = `<strong>NCERT:</strong> ${d.exp}`;
+                    document.getElementById('explanation').classList.remove('hidden');
+                    document.getElementById('btn-next').classList.remove('hidden');
+                };
+                c.appendChild(b);
+            });
+            document.getElementById('explanation').classList.add('hidden'); document.getElementById('btn-next').classList.add('hidden');
+        }
+        function handleNext() { qIdx++; if(qIdx < activeSet.length) loadQ(); else showHome(); }
+        function changeScreen(id) { document.querySelectorAll('body > div').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
+        function showHome() { changeScreen('screen-home'); }
+        function showModes() { changeScreen('screen-modes'); }
+    </script>
+</body>
+</html>
